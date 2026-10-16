@@ -1,12 +1,8 @@
 use super::{Move, Position, RulesError};
 
-/// Chess position implementation backed by the shakmaty library.
-///
-/// This is the only module allowed to import shakmaty. It adapts shakmaty's
-/// types to our `Position` trait interface.
 #[derive(Clone)]
 pub struct ShakmatyPosition {
-    _inner: (), // Placeholder; real implementation would hold shakmaty types
+    _inner: (),
 }
 
 impl Position for ShakmatyPosition {
