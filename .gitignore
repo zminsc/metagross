@@ -1,1 +1,11 @@
-/target
+/target/
+
+# Debug symbols
+*.pdb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
