@@ -1,21 +1,29 @@
 use super::{Engine, Limits};
 use crate::rules::{Move, Position};
 
-/// A simple engine that plays random legal moves.
 pub struct RandomEngine {
-    seed: u64,
+    state: u64,
 }
 
 impl RandomEngine {
-    /// Creates a new RandomEngine with the given random seed.
     pub fn new(seed: u64) -> Self {
-        Self { seed }
+        Self { state: seed }
+    }
+
+    fn next(&mut self) -> u64 {
+        self.state = self.state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        self.state
     }
 }
 
 impl<P: Position> Engine<P> for RandomEngine {
     fn best_move(&mut self, pos: &P, limits: &Limits) -> Option<Move> {
-        let _ = (pos, limits);
-        todo!()
+        let _ = limits;
+        let moves = pos.legal_moves();
+        if moves.is_empty() {
+            return None;
+        }
+        let index = (self.next() as usize) % moves.len();
+        Some(moves[index])
     }
 }

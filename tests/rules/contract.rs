@@ -1,25 +1,23 @@
-use metagross::rules::{Position, RulesError};
+use metagross::rules::Position;
 
-/// Generic contract tests that any Position implementation must satisfy.
-///
-/// These tests verify that the implementation correctly:
-/// - Computes perft numbers for the starting position
-/// - Rejects illegal moves
-/// - Round-trips FEN strings correctly
-
-/// Tests perft (performance test) at various depths from the starting position.
-///
-/// Perft counts the number of leaf nodes at a given depth in the move tree.
-/// These are well-known values for the standard starting position:
-/// - Depth 1: 20 moves
-/// - Depth 2: 400 moves
-/// - Depth 3: 8,902 moves
-#[ignore]
 #[test]
 fn test_perft_startpos() {
     fn perft<P: Position>(pos: &P, depth: u32) -> u64 {
-        let _ = (pos, depth);
-        todo!()
+        if depth == 0 {
+            return 1;
+        }
+        let moves = pos.legal_moves();
+        if depth == 1 {
+            return moves.len() as u64;
+        }
+        let mut count = 0;
+        for m in moves {
+            let mut new_pos = pos.clone();
+            if new_pos.play(m).is_ok() {
+                count += perft(&new_pos, depth - 1);
+            }
+        }
+        count
     }
 
     let pos = metagross::rules::shakmaty::ShakmatyPosition::startpos();
@@ -28,13 +26,10 @@ fn test_perft_startpos() {
     assert_eq!(perft(&pos, 3), 8902);
 }
 
-/// Tests that illegal moves are properly rejected.
-#[ignore]
 #[test]
 fn test_illegal_move_rejection() {
     let mut pos = metagross::rules::shakmaty::ShakmatyPosition::startpos();
 
-    // Try an illegal move (e.g., moving a piece that doesn't exist)
     let illegal_move = metagross::rules::Move {
         from: 0,
         to: 63,
@@ -48,25 +43,17 @@ fn test_illegal_move_rejection() {
     );
 }
 
-/// Tests that FEN strings can be parsed and serialized correctly.
-#[ignore]
 #[test]
 fn test_fen_round_trip() {
     let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     let pos = metagross::rules::shakmaty::ShakmatyPosition::from_fen(fen);
     assert!(pos.is_ok(), "Failed to parse starting position FEN");
-
-    // For a complete round-trip test, we would need a to_fen method
-    // which is not in the current trait specification
 }
 
-/// Tests parsing UCI move strings.
-#[ignore]
 #[test]
 fn test_parse_uci_move() {
     let pos = metagross::rules::shakmaty::ShakmatyPosition::startpos();
 
-    // Test valid move
     let result = pos.parse_uci_move("e2e4");
     assert!(
         result.is_ok(),
@@ -74,7 +61,6 @@ fn test_parse_uci_move() {
         result
     );
 
-    // Test invalid move
     let result = pos.parse_uci_move("e2e5");
     assert!(
         result.is_err(),
@@ -82,18 +68,55 @@ fn test_parse_uci_move() {
     );
 }
 
-/// Tests converting moves to UCI format.
-#[ignore]
 #[test]
 fn test_to_uci() {
     let pos = metagross::rules::shakmaty::ShakmatyPosition::startpos();
 
     let m = metagross::rules::Move {
-        from: 12, // e2
-        to: 28,   // e4
+        from: 12,
+        to: 28,
         promotion: None,
     };
 
     let uci = pos.to_uci(m);
     assert_eq!(uci, "e2e4");
+}
+
+#[test]
+fn test_random_self_play() {
+    use metagross::engine::{random::RandomEngine, Engine, Limits};
+
+    let mut engine = RandomEngine::new(42);
+    let limits = Limits::default();
+
+    for game in 0..1000 {
+        let mut pos = metagross::rules::shakmaty::ShakmatyPosition::startpos();
+        let mut plies = 0;
+        const MAX_PLIES: u32 = 500;
+
+        loop {
+            if pos.is_game_over() {
+                break;
+            }
+            if plies >= MAX_PLIES {
+                break;
+            }
+
+            let m = engine.best_move(&pos, &limits);
+            match m {
+                None => break,
+                Some(m) => {
+                    let legal_moves = pos.legal_moves();
+                    assert!(
+                        legal_moves.contains(&m),
+                        "Game {}: Engine returned illegal move at ply {}",
+                        game,
+                        plies
+                    );
+                    pos.play(m).expect("Engine returned illegal move");
+                    plies += 1;
+                }
+            }
+        }
+    }
 }
