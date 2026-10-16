@@ -120,3 +120,50 @@ fn test_random_self_play() {
         }
     }
 }
+
+#[test]
+fn test_rng_distribution() {
+    use metagross::engine::random::RandomEngine;
+
+    let mut rng = RandomEngine::new(12345);
+    const CHOICES: usize = 20;
+    const DRAWS: usize = 10000;
+
+    let mut counts = [0usize; CHOICES];
+
+    let mut mock_moves = Vec::with_capacity(CHOICES);
+    for i in 0..CHOICES {
+        mock_moves.push(metagross::rules::Move {
+            from: i as u8,
+            to: (i + 1) as u8,
+            promotion: None,
+        });
+    }
+
+    for _ in 0..DRAWS {
+        let m = rng.bounded(CHOICES as u64) as usize;
+        counts[m] += 1;
+    }
+
+    let expected = DRAWS / CHOICES;
+    let min = *counts.iter().min().unwrap();
+    let max = *counts.iter().max().unwrap();
+
+    for (i, &count) in counts.iter().enumerate() {
+        assert!(count > 0, "Index {} was never selected", i);
+    }
+
+    let tolerance = expected / 3;
+    assert!(
+        min >= expected.saturating_sub(tolerance),
+        "Min count {} too far below expected {}",
+        min,
+        expected
+    );
+    assert!(
+        max <= expected + tolerance,
+        "Max count {} too far above expected {}",
+        max,
+        expected
+    );
+}
