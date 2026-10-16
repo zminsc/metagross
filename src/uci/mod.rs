@@ -6,20 +6,27 @@ use crate::engine::Engine;
 use crate::rules::Position;
 use std::io::{self, BufRead, Write};
 
-/// Runs the UCI protocol loop.
-///
-/// Reads UCI commands from `input`, maintains position and engine state,
-/// and writes UCI responses to `output`. Continues until the `quit` command
-/// is received.
-///
-/// # Errors
-///
-/// Returns `io::Result` if reading from input or writing to output fails.
 pub fn run<P: Position, E: Engine<P>>(
     engine: E,
     input: impl BufRead,
-    output: impl Write,
+    mut output: impl Write,
 ) -> io::Result<()> {
-    let _ = (engine, input, output);
-    todo!()
+    use command::parse;
+    use session::Session;
+
+    let mut session = Session::<P, E>::new(engine);
+
+    for line_result in input.lines() {
+        let line = line_result?;
+
+        if let Ok(cmd) = parse(&line) {
+            let is_quit = matches!(cmd, command::Command::Quit);
+            session.handle(cmd, &mut output)?;
+            if is_quit {
+                break;
+            }
+        }
+    }
+
+    Ok(())
 }
