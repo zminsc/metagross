@@ -222,3 +222,107 @@ fn test_parse_unknown_command() {
     let result = parse("unknown");
     assert!(result.is_err());
 }
+
+#[test]
+fn test_go_movetime_invalid() {
+    let mut output = Vec::new();
+    let mut session = Session::<FakePosition, FakeEngine>::new(FakeEngine);
+
+    session.handle(Command::Uci, &mut output).unwrap();
+    session.handle(Command::IsReady, &mut output).unwrap();
+    session
+        .handle(
+            Command::Position {
+                fen: None,
+                moves: vec![],
+            },
+            &mut output,
+        )
+        .unwrap();
+
+    let cmd = parse("go movetime abc").unwrap();
+    session.handle(cmd, &mut output).unwrap();
+
+    let output_str = String::from_utf8(output).unwrap();
+    let bestmove_count = output_str.matches("bestmove").count();
+    assert_eq!(bestmove_count, 1);
+    assert!(output_str.contains("bestmove e2e4"));
+}
+
+#[test]
+fn test_go_depth_no_value() {
+    let mut output = Vec::new();
+    let mut session = Session::<FakePosition, FakeEngine>::new(FakeEngine);
+
+    session.handle(Command::Uci, &mut output).unwrap();
+    session.handle(Command::IsReady, &mut output).unwrap();
+    session
+        .handle(
+            Command::Position {
+                fen: None,
+                moves: vec![],
+            },
+            &mut output,
+        )
+        .unwrap();
+
+    let cmd = parse("go depth").unwrap();
+    session.handle(cmd, &mut output).unwrap();
+
+    let output_str = String::from_utf8(output).unwrap();
+    let bestmove_count = output_str.matches("bestmove").count();
+    assert_eq!(bestmove_count, 1);
+    assert!(output_str.contains("bestmove e2e4"));
+}
+
+#[test]
+fn test_go_wtime_negative() {
+    let mut output = Vec::new();
+    let mut session = Session::<FakePosition, FakeEngine>::new(FakeEngine);
+
+    session.handle(Command::Uci, &mut output).unwrap();
+    session.handle(Command::IsReady, &mut output).unwrap();
+    session
+        .handle(
+            Command::Position {
+                fen: None,
+                moves: vec![],
+            },
+            &mut output,
+        )
+        .unwrap();
+
+    let cmd = parse("go wtime -5").unwrap();
+    session.handle(cmd, &mut output).unwrap();
+
+    let output_str = String::from_utf8(output).unwrap();
+    let bestmove_count = output_str.matches("bestmove").count();
+    assert_eq!(bestmove_count, 1);
+    assert!(output_str.contains("bestmove e2e4"));
+}
+
+#[test]
+fn test_go_unknown_args() {
+    let mut output = Vec::new();
+    let mut session = Session::<FakePosition, FakeEngine>::new(FakeEngine);
+
+    session.handle(Command::Uci, &mut output).unwrap();
+    session.handle(Command::IsReady, &mut output).unwrap();
+    session
+        .handle(
+            Command::Position {
+                fen: None,
+                moves: vec![],
+            },
+            &mut output,
+        )
+        .unwrap();
+
+    let cmd = parse("go foo bar").unwrap();
+    session.handle(cmd, &mut output).unwrap();
+
+    let output_str = String::from_utf8(output).unwrap();
+    let bestmove_count = output_str.matches("bestmove").count();
+    assert_eq!(bestmove_count, 1);
+    assert!(output_str.contains("bestmove e2e4"));
+}

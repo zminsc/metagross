@@ -99,14 +99,11 @@ fn parse_go(tokens: &[&str]) -> Result<Command, ParseError> {
     while i < tokens.len() {
         if tokens[i] == "movetime" {
             i += 1;
-            if i >= tokens.len() {
-                return Err(ParseError {
-                    message: "movetime requires value".to_string(),
-                });
+            if i < tokens.len() {
+                if let Ok(value) = tokens[i].parse() {
+                    limits.movetime_ms = Some(value);
+                }
             }
-            limits.movetime_ms = Some(tokens[i].parse().map_err(|_| ParseError {
-                message: format!("invalid movetime value: {}", tokens[i]),
-            })?);
         }
         i += 1;
     }
